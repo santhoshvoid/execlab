@@ -13,7 +13,8 @@
     "execa": "^7.2.0",
     "fastify": "^5.8.5",
     "ioredis": "^5.10.1",
-    "pg": "^8.20.0"
+    "pg": "^8.20.0",
+    "socket.io": "^4.8.3"
   },
   "devDependencies": {
     "@types/node": "^20.19.39",

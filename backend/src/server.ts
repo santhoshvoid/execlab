@@ -4,9 +4,16 @@ import { testRedis } from './services/redis'
 import queue from './services/queue'
 import { Job } from 'bullmq'
 import cors from '@fastify/cors'
+import { Server } from "socket.io"
 
 const app = Fastify()
+const io = new Server(3002, {
+  cors: {
+    origin: "*"
+  }
+})
 
+export { io }
 
 app.register(historyRoutes)
 app.get('/health', async () => {

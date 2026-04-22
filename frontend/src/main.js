@@ -1,5 +1,6 @@
 import './style.css'
-
+import { io } from "socket.io-client"
+const socket = io("http://localhost:3002")
 const textarea = document.querySelector('#code')
 const button = document.querySelector('#runBtn')
 const status = document.querySelector('#status')
@@ -25,35 +26,45 @@ button.onclick = async () => {
 
     const data = await res.json()
     const jobId = data.jobId
+    socket.off(`job:${jobId}`)
+    socket.on(`job:${jobId}`, (data) => {
+      // 🔥 STREAMING OUTPUT
+      if (data.chunk) {
+        output.innerText += data.chunk
+      }
 
-    const interval = setInterval(async () => {
-      const resultRes = await fetch(`http://localhost:3001/result/${jobId}`)
-      const result = await resultRes.json()
+      // 🔥 FINAL RESULT
+      if (data.status === "completed") {
+        status.innerText = "Status: completed"
+        status.className = "completed"
 
-      // ✅ ALWAYS update status
-      status.innerText = `Status: ${result.status}`
+        if (!data.chunk && data.output) {
+          output.innerText = data.output
+        }
 
-      // ✅ SAFE OUTPUT HANDLING (THIS IS THE FIX)
-      output.innerText = `${result.output || ''}\n\n⏱ Runtime: ${result.runtime || 0} ms`
+        // Optional: show runtime
+        if (data.runtime) {
+          output.innerText += `\n\n⏱ Runtime: ${data.runtime} ms`
+        }
 
-      if (result.status === 'completed') {
-        clearInterval(interval)
-        status.className = 'completed'
         button.disabled = false
-        button.innerText = 'Run Code'
+        button.innerText = "Run Code"
 
         refreshHistoryAfterRun()
       }
 
-      if (result.status === 'failed') {
-        clearInterval(interval)
-        status.className = 'failed'
-        output.innerText = result.error || 'Execution failed'
-        button.disabled = false
-        button.innerText = 'Run Code'
-      }
+      // 🔥 HANDLE ERROR
+      if (data.status === "failed") {
+        status.innerText = "Status: failed"
+        status.className = "failed"
 
-    }, 1000)
+        output.innerText += `\n${data.error || "Execution failed"}`
+
+        button.disabled = false
+        button.innerText = "Run Code"
+      }
+    })
+
 
   } catch (err) {
     status.innerText = 'Status: error'
