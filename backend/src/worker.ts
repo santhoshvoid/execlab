@@ -1,6 +1,8 @@
+import 'dotenv/config'
 import { Worker } from 'bullmq'
 import { execa } from 'execa'
 import Redis from 'ioredis'
+import { saveSubmission } from './services/saveSubmission'
 
 const connection = new Redis(
   process.env.REDIS_URL || 'redis://localhost:6379',
@@ -44,10 +46,21 @@ const worker = new Worker(
 
         console.log('Output:', stdout)
 
-        return {
+        const result = {
           output: stdout || stderr,
           runtime,
         }
+
+        // 🔥 NON-BLOCKING SAVE
+        saveSubmission({
+          code,
+          language,
+          ...result,
+        }).catch(err => {
+          console.error('DB save failed:', err)
+        })
+
+        return result
 
       } catch (err: any) {
         if (err.timedOut) {
@@ -88,10 +101,21 @@ const worker = new Worker(
 
         const runtime = Date.now() - start
 
-        return { 
+        const result = {
           output: stdout || stderr,
           runtime,
         }
+
+        // 🔥 NON-BLOCKING SAVE
+        saveSubmission({
+          code,
+          language,
+          ...result,
+        }).catch(err => {
+          console.error('DB save failed:', err)
+        })
+
+        return result
 
       } catch (err: any) {
         if (err.timedOut) {
@@ -132,10 +156,21 @@ const worker = new Worker(
 
         const runtime = Date.now() - start
 
-        return {
+        const result = {
           output: stdout || stderr,
-          runtime
+          runtime,
         }
+
+        // 🔥 NON-BLOCKING SAVE
+        saveSubmission({
+          code,
+          language,
+          ...result,
+        }).catch(err => {
+          console.error('DB save failed:', err)
+        })
+
+        return result
 
       } catch (err: any) {
         if (err.timedOut) {
@@ -173,10 +208,21 @@ const worker = new Worker(
 
         const runtime = Date.now() - start
 
-        return {
+        const result = {
           output: stdout || stderr,
-          runtime
+          runtime,
         }
+
+        // 🔥 NON-BLOCKING SAVE
+        saveSubmission({
+          code,
+          language,
+          ...result,
+        }).catch(err => {
+          console.error('DB save failed:', err)
+        })
+
+        return result
 
       } catch (err: any) {
         if (err.timedOut) {

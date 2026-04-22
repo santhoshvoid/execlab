@@ -1,12 +1,9 @@
-import { Pool } from 'pg'
+import pkg from 'pg'
+const { Pool } = pkg
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
+export const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false,
+  },
 })
-
-export async function testDB() {
-  const res = await pool.query('SELECT NOW()')
-  return res.rows[0]
-}
-
-export default pool
