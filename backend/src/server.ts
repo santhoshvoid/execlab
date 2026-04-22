@@ -3,8 +3,10 @@ import { testDB } from './services/db'
 import { testRedis } from './services/redis'
 import queue from './services/queue'
 import { Job } from 'bullmq'
+import cors from '@fastify/cors'
 
 const app = Fastify()
+
 
 app.get('/health', async () => {
   try {
@@ -70,6 +72,10 @@ app.get('/result/:id', async (req, reply) => {
 
 const start = async () => {
   try {
+    await app.register(cors, {
+      origin: '*'
+    })
+
     await app.listen({ port: 3001, host: '0.0.0.0' })
     console.log('Server running on port 3001')
   } catch (err) {
@@ -79,3 +85,4 @@ const start = async () => {
 }
 
 start()
+

@@ -8,6 +8,7 @@
     "dev": "tsx src/server.ts"
   },
   "dependencies": {
+    "@fastify/cors": "^11.2.0",
     "bullmq": "^5.75.2",
     "execa": "^7.2.0",
     "fastify": "^5.8.5",
