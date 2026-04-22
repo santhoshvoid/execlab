@@ -1,30 +1,126 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8">
-    <title>ExecLab</title>
-  </head>
-  <body>
-    <div class="container">
-      <h1>ExecLab 🚀</h1>
-      <select id="language">
-        <option value="python">Python</option>
-        <option value="javascript">JavaScript</option>
-        <option value="cpp">C++</option>
-        <option value="java">Java</option>
-      </select>
-      <div id="editor" style="height: 300px; border-radius: 10px;"></div>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ExecLab — Code Execution Engine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet" />
+</head>
+<body>
 
-      <button id="runBtn">Run Code</button>
+  <!-- HEADER -->
+  <header id="appHeader">
+    <div class="brand">
+      <span class="brand-icon">⚡</span>
+      <span class="brand-name">ExecLab</span>
+      <span class="brand-tag">execution engine</span>
+    </div>
+    <div class="header-mid">
+      <div class="lang-pill">
+        <span class="lang-emoji" id="langEmoji">🐍</span>
+        <select id="language" class="lang-select">
+          <option value="python">Python</option>
+          <option value="javascript">JavaScript</option>
+          <option value="cpp">C++</option>
+          <option value="java">Java</option>
+        </select>
+        <span class="lang-caret">▾</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <button id="runBtn" class="run-btn">
+        <span id="runBtnIcon">▶</span>
+        <span id="runBtnLabel">Run</span>
+        <kbd class="run-kbd">⌘↵</kbd>
+      </button>
+    </div>
+  </header>
 
-      <p id="status" class="idle">Status: idle</p>
+  <!-- WORKSPACE -->
+  <div id="workspace">
 
-      <pre id="outputBox"></pre>
-      <hr style="margin:20px 0;" />
-      <h2 style="color:white;">Execution History</h2>
-      <div id="history"></div>
+    <!-- EDITOR PANE -->
+    <div class="pane" id="editorPane">
+      <div class="pane-bar">
+        <div class="mac-dots"><span class="mac-r"></span><span class="mac-y"></span><span class="mac-g"></span></div>
+        <div class="pane-tab active"><span id="fileTab">main.py</span></div>
+      </div>
+      <div id="editorWrap">
+        <div id="editor"></div>
+      </div>
     </div>
 
-    <script type="module" src="/src/main.js"></script>
-  </body>
+    <div class="split-line"></div>
+
+    <!-- TERMINAL PANE -->
+    <div class="pane" id="termPane">
+      <div class="pane-bar">
+        <div class="mac-dots"><span class="mac-r"></span><span class="mac-y"></span><span class="mac-g"></span></div>
+        <div class="pane-tab active"><span>terminal</span></div>
+        <div class="pane-bar-end">
+          <span class="term-status" id="termStatus">
+            <span class="status-dot idle" id="statusDot"></span>
+            <span id="statusText">idle</span>
+          </span>
+          <button class="icon-btn" id="clearBtn" title="Clear terminal">⊘</button>
+        </div>
+      </div>
+      <div id="termBody">
+        <div id="termContent">
+          <div class="term-banner">
+            <span class="dim">╭──────────────────────────────────────╮</span><br>
+            <span class="dim">│  ExecLab v1.0 · Sandboxed Engine     │</span><br>
+            <span class="dim">│  Python · JavaScript · C++ · Java    │</span><br>
+            <span class="dim">╰──────────────────────────────────────╯</span><br><br>
+          </div>
+          <div id="outputArea"></div>
+          <div class="cursor-row">
+            <span class="cursor-prompt">$&nbsp;</span>
+            <span id="termCursor" class="cursor-blink">▌</span>
+            <span id="termSpinner" class="cursor-spin hidden">⟳</span>
+          </div>
+        </div>
+      </div>
+      <div id="termFooter">
+        <div id="footerBadges">
+          <span id="exitBadge" class="badge exit-ok hidden"></span>
+          <span id="rtBadge"   class="badge rt hidden"></span>
+        </div>
+        <span class="footer-hint">docker isolated</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- HISTORY SECTION -->
+  <div id="histSection">
+    <div id="histBar">
+      <div class="hist-bar-l">
+        <span class="hist-icon">◈</span>
+        <span class="hist-label">Execution History</span>
+        <span class="hist-count" id="histCount">0</span>
+      </div>
+      <span class="hist-chevron" id="histChevron">▲</span>
+    </div>
+    <div id="histDrawer">
+      <div id="histList"></div>
+    </div>
+  </div>
+
+  <!-- MODAL -->
+  <div class="modal-bg hidden" id="modalBg">
+    <div class="modal-card">
+      <div class="modal-head">
+        <span id="modalTitle">code</span>
+        <button id="modalClose" class="icon-btn">✕</button>
+      </div>
+      <div class="modal-body">
+        <pre id="modalPre"></pre>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
 </html>
