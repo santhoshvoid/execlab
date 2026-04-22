@@ -2,6 +2,7 @@ import Fastify from 'fastify'
 import { testDB } from './services/db'
 import { testRedis } from './services/redis'
 import queue from './services/queue'
+import { Job } from 'bullmq'
 
 const app = Fastify()
 
@@ -22,6 +23,7 @@ app.get('/health', async () => {
     }
   }
 })
+
 app.post('/run', async (req, reply) => {
   const { code, language } = req.body as any
 
@@ -32,6 +34,26 @@ app.post('/run', async (req, reply) => {
 
   return {
     jobId: job.id
+  }
+})
+
+/* ✅ NEW ROUTE (RESULT API) */
+app.get('/result/:id', async (req, reply) => {
+  const { id } = req.params as any
+
+  const job = await queue.getJob(id)
+
+  if (!job) {
+    return { status: 'not_found' }
+  }
+
+  const state = await job.getState()
+
+  return {
+    id: job.id,
+    status: state,
+    result: job.returnvalue || null,
+    failedReason: job.failedReason || null
   }
 })
 

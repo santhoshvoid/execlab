@@ -5,7 +5,7 @@ import Redis from 'ioredis'
 const connection = new Redis(
   process.env.REDIS_URL || 'redis://localhost:6379',
   {
-    maxRetriesPerRequest: null  // required by BullMQ
+    maxRetriesPerRequest: null
   }
 )
 
@@ -32,17 +32,24 @@ const worker = new Worker(
         )
 
         console.log('Output:', stdout)
-        return { output: stdout, error: stderr }
+
+        // ✅ FIXED RETURN
+        return {
+          output: stdout || stderr
+        }
 
       } catch (err: any) {
-        console.error('Execution error:', err)
+        console.error('Execution error FULL:', err)
+
         return {
-          error: err?.stderr || err?.message || 'Unknown error'
+          output: err?.stderr || err?.message || 'Execution failed'
         }
       }
     }
 
-    return { error: 'Unsupported language' }
+    return {
+      output: 'Unsupported language'
+    }
   },
   {
     connection
