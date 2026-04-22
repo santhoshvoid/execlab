@@ -49,11 +49,22 @@ app.get('/result/:id', async (req, reply) => {
 
   const state = await job.getState()
 
+  if (state === 'completed') {
+    return {
+      status: 'completed',
+      output: job.returnvalue?.output || null
+    }
+  }
+
+  if (state === 'failed') {
+    return {
+      status: 'failed',
+      error: job.failedReason
+    }
+  }
+
   return {
-    id: job.id,
-    status: state,
-    result: job.returnvalue || null,
-    failedReason: job.failedReason || null
+    status: state // waiting | active | delayed
   }
 })
 
