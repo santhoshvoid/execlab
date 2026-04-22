@@ -5,19 +5,17 @@
     <title>ExecLab</title>
   </head>
   <body>
-    <h1>ExecLab 🚀</h1>
+    <div class="container">
+      <h1>ExecLab 🚀</h1>
 
-    <textarea id="code" rows="10" cols="50">
-print("hello from UI")
-    </textarea>
+      <textarea id="code" placeholder="Write your code here...">print("hello from UI")</textarea>
 
-    <br /><br />
+      <button id="runBtn">Run Code</button>
 
-    <button id="runBtn">Run Code</button>
+      <p id="status" class="idle">Status: idle</p>
 
-    <p id="status">Status: idle</p>
-
-    <pre id="output"></pre>
+      <pre id="outputBox"></pre>
+    </div>
 
     <script type="module" src="/src/main.js"></script>
   </body>
