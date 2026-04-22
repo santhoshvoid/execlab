@@ -1,4 +1,13 @@
 import { Worker } from 'bullmq'
+import { execa } from 'execa'
+import Redis from 'ioredis'
+
+const connection = new Redis(
+  process.env.REDIS_URL || 'redis://localhost:6379',
+  {
+    maxRetriesPerRequest: null  // required by BullMQ
+  }
+)
 
 const worker = new Worker(
   'code-execution',
@@ -7,17 +16,36 @@ const worker = new Worker(
 
     const { code, language } = job.data
 
-    await new Promise(res => setTimeout(res, 2000))
+    if (language === 'python') {
+      try {
+        const { stdout, stderr } = await execa(
+          'docker',
+          [
+            'run',
+            '--rm',
+            '-i',
+            'execlab-python-runner',
+          ],
+          {
+            input: code
+          }
+        )
 
-    console.log(`Executed ${language} code:`, code)
+        console.log('Output:', stdout)
+        return { output: stdout, error: stderr }
 
-    return { output: 'Execution done' }
+      } catch (err: any) {
+        console.error('Execution error:', err)
+        return {
+          error: err?.stderr || err?.message || 'Unknown error'
+        }
+      }
+    }
+
+    return { error: 'Unsupported language' }
   },
   {
-    connection: {
-      host: 'redis',
-      port: 6379
-    }
+    connection
   }
 )
 
