@@ -4,6 +4,7 @@ const textarea = document.querySelector('#code')
 const button = document.querySelector('#runBtn')
 const status = document.querySelector('#status')
 const output = document.querySelector('#outputBox')
+const languageSelect = document.querySelector('#language')
 
 button.onclick = async () => {
   output.innerText = ''
@@ -11,8 +12,6 @@ button.onclick = async () => {
   status.className = 'running'
   button.disabled = true
   button.innerText = 'Running...'
-  button.disabled = false
-  button.innerText = 'Run Code'
 
   try {
     const res = await fetch('http://localhost:3001/run', {
@@ -20,7 +19,7 @@ button.onclick = async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         code: textarea.value,
-        language: 'python'
+        language: languageSelect.value
       })
     })
 
@@ -35,12 +34,13 @@ button.onclick = async () => {
       status.innerText = `Status: ${result.status}`
 
       // ✅ SAFE OUTPUT HANDLING (THIS IS THE FIX)
-      output.innerText = result.output || ''
+      output.innerText = `${result.output || ''}\n\n⏱ Runtime: ${result.runtime || 0} ms`
 
       if (result.status === 'completed') {
         clearInterval(interval)
         status.className = 'completed'
         button.disabled = false
+        button.innerText = 'Run Code'
       }
 
       if (result.status === 'failed') {
@@ -48,6 +48,7 @@ button.onclick = async () => {
         status.className = 'failed'
         output.innerText = result.error || 'Execution failed'
         button.disabled = false
+        button.innerText = 'Run Code'
       }
 
     }, 1000)

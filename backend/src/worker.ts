@@ -18,31 +18,91 @@ const worker = new Worker(
 
     if (language === 'python') {
       try {
+        // ✅ ADD HERE (before execa)
+        const start = Date.now()
+
         const { stdout, stderr } = await execa(
           'docker',
           [
             'run',
             '--rm',
             '-i',
+            '--memory=128m',
+            '--cpus=0.5',
+            '--pids-limit=64',
+            '--network=none',
             'execlab-python-runner',
           ],
           {
-            input: code
+            input: code,
+            timeout: 3000,
           }
         )
 
+        // ✅ ADD HERE (after execa)
+        const runtime = Date.now() - start
+
         console.log('Output:', stdout)
 
-        // ✅ FIXED RETURN
         return {
-          output: stdout || stderr
+          output: stdout || stderr,
+          runtime,
         }
 
       } catch (err: any) {
-        console.error('Execution error FULL:', err)
+        if (err.timedOut) {
+          return {
+            output: 'Execution timed out (3s limit)',
+            runtime: 3000
+          }
+        }
 
         return {
           output: err?.stderr || err?.message || 'Execution failed'
+        }
+      }
+    }
+
+    if (language === 'javascript') {
+      try {
+        const start = Date.now()
+
+        const { stdout, stderr } = await execa(
+          'docker',
+          [
+            'run',
+            '--rm',
+            '-i',
+            '--memory=128m',
+            '--cpus=0.5',
+            '--pids-limit=64',
+            '--network=none',
+            'execlab-node-runner',
+          ],
+          {
+            input: code,
+            timeout: 3000,
+          }
+        )
+
+        const runtime = Date.now() - start
+
+        return { 
+          output: stdout || stderr,
+          runtime,
+        }
+
+      } catch (err: any) {
+        if (err.timedOut) {
+          return {
+            output: 'Execution timed out (3s limit)',
+            runtime: 3000
+          }
+        }
+
+        return {
+          output: err?.stderr || err?.message || 'Execution failed',
+          runtime: 0
         }
       }
     }
