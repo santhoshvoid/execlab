@@ -1,11 +1,38 @@
 import './style.css'
+import * as monaco from 'monaco-editor'
 import { io } from "socket.io-client"
+let editor
+
+window.addEventListener('DOMContentLoaded', () => {
+  editor = monaco.editor.create(document.getElementById('editor'), {
+    value: 'print("hello from UI")',
+    language: 'python',
+    theme: 'vs-dark',
+    fontSize: 14,
+    minimap: { enabled: false },
+    automaticLayout: true   // ✅ THIS FIXES HALF YOUR ISSUES
+  })
+})
 const socket = io("http://localhost:3002")
-const textarea = document.querySelector('#code')
 const button = document.querySelector('#runBtn')
 const status = document.querySelector('#status')
 const output = document.querySelector('#outputBox')
 const languageSelect = document.querySelector('#language')
+
+languageSelect.addEventListener('change', () => {
+  const lang = languageSelect.value
+
+  const map = {
+    python: 'python',
+    javascript: 'javascript',
+    cpp: 'cpp',
+    java: 'java'
+  }
+
+  if (editor) {
+    monaco.editor.setModelLanguage(editor.getModel(), map[lang])
+  }
+})
 
 button.onclick = async () => {
   output.innerText = ''
@@ -19,15 +46,14 @@ button.onclick = async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        code: textarea.value,
+        code: editor ? editor.getValue() : '',
         language: languageSelect.value
       })
     })
 
     const data = await res.json()
     const jobId = data.jobId
-    socket.off(`job:${jobId}`)
-    socket.on(`job:${jobId}`, (data) => {
+    socket.once(`job:${jobId}`, (data) => {
       // 🔥 STREAMING OUTPUT
       if (data.chunk) {
         output.innerText += data.chunk

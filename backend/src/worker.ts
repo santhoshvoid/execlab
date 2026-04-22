@@ -23,6 +23,7 @@ const worker = new Worker(
     if (language === 'python') {
       try {
         const start = Date.now()
+        
 
         const proc = spawn('docker', [
           'run',
@@ -34,6 +35,19 @@ const worker = new Worker(
           '--network=none',
           'execlab-python-runner',
         ])
+        let finished = false
+        const timeout = setTimeout(() => {
+          if (!finished) {
+            finished = true
+
+            proc.kill()
+
+            io.emit(`job:${job.id}`, {
+              status: "failed",
+              error: "Execution timed out"
+            })
+          }
+        }, 10000)
 
         // send code
         proc.stdin.write(code)
@@ -61,7 +75,12 @@ const worker = new Worker(
           })
         })
 
-        proc.on('close', async () => {
+        proc.on('exit', async () => {
+          if (finished) return
+          finished = true
+
+          clearTimeout(timeout)
+
           const runtime = Date.now() - start
 
           io.emit(`job:${job.id}`, {
@@ -75,6 +94,16 @@ const worker = new Worker(
             language,
             output: finalOutput,
             runtime
+          })
+        })
+
+        proc.on('error', (err) => {
+          if (finished) return
+          finished = true
+
+          io.emit(`job:${job.id}`, {
+            status: "failed",
+            error: err.message
           })
         })
 
@@ -180,6 +209,19 @@ const worker = new Worker(
           '--network=none',
           'execlab-node-runner',
         ])
+        let finished = false
+        const timeout = setTimeout(() => {
+          if (!finished) {
+            finished = true
+
+            proc.kill()
+
+            io.emit(`job:${job.id}`, {
+              status: "failed",
+              error: "Execution timed out"
+            })
+          }
+        }, 10000)
 
         proc.stdin.write(code)
         proc.stdin.end()
@@ -204,7 +246,12 @@ const worker = new Worker(
           })
         })
 
-        proc.on('close', async () => {
+        proc.on('exit', async () => {
+          if (finished) return
+          finished = true
+
+          clearTimeout(timeout)
+
           const runtime = Date.now() - start
 
           io.emit(`job:${job.id}`, {
@@ -218,6 +265,16 @@ const worker = new Worker(
             language,
             output: finalOutput,
             runtime
+          })
+        })
+
+        proc.on('error', (err) => {
+          if (finished) return
+          finished = true
+
+          io.emit(`job:${job.id}`, {
+            status: "failed",
+            error: err.message
           })
         })
 
