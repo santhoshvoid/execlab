@@ -1,15 +1,14 @@
-FROM eclipse-temurin:17
+FROM eclipse-temurin:17-jdk-alpine
 
-WORKDIR /app
+# Install Python for the wrapper script
+RUN apk add --no-cache python3
 
-RUN echo '#!/bin/bash\n\
-cat > Main.java\n\
-javac Main.java 2> compile_error.txt\n\
-if [ $? -ne 0 ]; then\n\
-  cat compile_error.txt\n\
-  exit 1\n\
-fi\n\
-java Main\n\
-' > run.sh && chmod +x run.sh
+# Non-root sandbox user
+RUN addgroup -S sandbox && adduser -S sandbox -G sandbox
 
-CMD ["./run.sh"]
+WORKDIR /sandbox
+COPY run.py .
+
+USER sandbox
+
+ENTRYPOINT ["python3", "-u", "/sandbox/run.py"]

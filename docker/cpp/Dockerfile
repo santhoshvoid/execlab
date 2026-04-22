@@ -1,16 +1,14 @@
-FROM gcc:latest
+FROM alpine:3.19
 
-WORKDIR /app
+# Install g++ and Python (Python used as the wrapper script runner)
+RUN apk add --no-cache g++ python3
 
-# create runner script
-RUN echo '#!/bin/bash\n\
-cat > main.cpp\n\
-g++ main.cpp -o main.out 2> compile_error.txt\n\
-if [ $? -ne 0 ]; then\n\
-  cat compile_error.txt\n\
-  exit 1\n\
-fi\n\
-./main.out\n\
-' > run.sh && chmod +x run.sh
+# Non-root sandbox user
+RUN addgroup -S sandbox && adduser -S sandbox -G sandbox
 
-CMD ["./run.sh"]
+WORKDIR /sandbox
+COPY run.py .
+
+USER sandbox
+
+ENTRYPOINT ["python3", "-u", "/sandbox/run.py"]

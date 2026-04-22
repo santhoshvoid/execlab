@@ -1,11 +1,11 @@
-FROM python:3.11-alpine
+FROM node:20-alpine
 
 # Non-root sandbox user
 RUN addgroup -S sandbox && adduser -S sandbox -G sandbox
 
 WORKDIR /sandbox
-COPY run.py .
+COPY run.js .
 
 USER sandbox
 
-ENTRYPOINT ["python3", "-u", "/sandbox/run.py"]
+ENTRYPOINT ["node", "/sandbox/run.js"]

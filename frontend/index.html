@@ -29,6 +29,11 @@
       </div>
     </div>
     <div class="header-right">
+      <!-- CANCEL BUTTON — shown only while running -->
+      <button id="cancelBtn" class="cancel-btn hidden">
+        <span class="cancel-icon">■</span>
+        <span>Stop</span>
+      </button>
       <button id="runBtn" class="run-btn">
         <span id="runBtnIcon">▶</span>
         <span id="runBtnLabel">Run</span>
@@ -53,7 +58,7 @@
 
     <div class="split-line"></div>
 
-    <!-- TERMINAL PANE -->
+    <!-- RIGHT PANE: stdin (top) + terminal (bottom) -->
     <div class="pane" id="termPane">
       <div class="pane-bar">
         <div class="mac-dots"><span class="mac-r"></span><span class="mac-y"></span><span class="mac-g"></span></div>
@@ -66,6 +71,23 @@
           <button class="icon-btn" id="clearBtn" title="Clear terminal">⊘</button>
         </div>
       </div>
+
+      <!-- STDIN SECTION -->
+      <div id="stdinSection">
+        <div id="stdinBar">
+          <span class="stdin-icon">↳</span>
+          <span class="stdin-label">stdin</span>
+          <span class="stdin-hint">— program input (for input() / Scanner / cin)</span>
+        </div>
+        <textarea
+          id="stdinInput"
+          class="stdin-textarea"
+          placeholder="Type program input here, one value per line&#10;e.g.  5&#10;     hello world"
+          spellcheck="false"
+        ></textarea>
+      </div>
+
+      <!-- TERMINAL OUTPUT -->
       <div id="termBody">
         <div id="termContent">
           <div class="term-banner">
@@ -82,12 +104,13 @@
           </div>
         </div>
       </div>
+
       <div id="termFooter">
         <div id="footerBadges">
           <span id="exitBadge" class="badge exit-ok hidden"></span>
           <span id="rtBadge"   class="badge rt hidden"></span>
         </div>
-        <span class="footer-hint">docker isolated</span>
+        <span class="footer-hint">docker isolated · rate limited</span>
       </div>
     </div>
 
