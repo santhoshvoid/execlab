@@ -167,12 +167,50 @@ async function runCode() {
     socket.on(event, handler)
 
     // Hard client-side timeout in case worker dies silently
-    setTimeout(() => {
-      if (isRunning) {
+    // Fallback: check result API if socket misses event
+    setTimeout(async () => {
+      if (!isRunning) return
+
+      try {
+        const res = await fetch(`${API}/result/${jobId}`)
+        const data = await res.json()
+
+        if (data.status === 'completed') {
+          socket.off(event, handler)
+
+          appendText(data.output || '', 'stdout')
+          setDoneUI(data.runtime || 0)
+
+          storeHistory({
+            id: jobId,
+            language: curLang,
+            code,
+            output: data.output || '',
+            runtime: data.runtime || 0
+          })
+
+          renderHistory()
+          return
+        }
+
+        if (data.status === 'failed') {
+          socket.off(event, handler)
+
+          appendText('\n' + data.error, 'stderr')
+          setFailedUI(data.error)
+          return
+        }
+
+        // still not done → real timeout
         socket.off(event, handler)
-        appendText('\n[no response from worker after 20s]', 'stderr')
+        appendText('\n[execution timeout]', 'stderr')
         setFailedUI('Timeout')
+
+      } catch (err) {
+        appendText('\n[network error]', 'stderr')
+        setFailedUI('Error')
       }
+
     }, 20000)
 
   } catch (err) {

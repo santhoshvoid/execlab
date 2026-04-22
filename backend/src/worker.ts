@@ -3,7 +3,7 @@ import { Worker } from 'bullmq'
 import { execa } from 'execa'
 import Redis from 'ioredis'
 import { saveSubmission } from './services/saveSubmission'
-import { io } from './server'
+import { io } from './socket'
 import { spawn } from "child_process"
 
 const connection = new Redis(
