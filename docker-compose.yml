@@ -3,40 +3,17 @@ services:
     build: ./backend
     ports:
       - "3001:3001"
+    env_file:
+      - ./backend/.env
     environment:
-      - DATABASE_URL=postgresql://execlab:password@postgres:5432/execlab
       - REDIS_URL=redis://redis:6379
       - JWT_SECRET=dev_secret
     depends_on:
-      - postgres
       - redis
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-
-#  worker:
-#    build: ./backend
-#    command: npx tsx src/worker.ts
-#    environment:
-#      - REDIS_URL=redis://redis:6379
-#    depends_on:
-#      - redis
-#    volumes:
-#      - /var/run/docker.sock:/var/run/docker.sock
-
-  postgres:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_USER: execlab
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: execlab
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./sql/schema.sql:/docker-entrypoint-initdb.d/schema.sql
 
   redis:
     image: redis:7-alpine
     ports:
       - "6379:6379"
-
-volumes:
-  postgres_data:

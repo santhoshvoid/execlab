@@ -1,5 +1,5 @@
 import Fastify from 'fastify'
-import { testDB } from './services/db'
+import { historyRoutes } from './routes/history'
 import { testRedis } from './services/redis'
 import queue from './services/queue'
 import { Job } from 'bullmq'
@@ -8,22 +8,9 @@ import cors from '@fastify/cors'
 const app = Fastify()
 
 
+app.register(historyRoutes)
 app.get('/health', async () => {
-  try {
-    const db = await testDB()
-    const redis = await testRedis()
-
-    return {
-      status: 'ok',
-      db,
-      redis
-    }
-  } catch (err) {
-    return {
-      status: 'error',
-      error: String(err)
-    }
-  }
+  return { status: 'ok' }
 })
 
 app.post('/run', async (req, reply) => {
