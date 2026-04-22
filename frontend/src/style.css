@@ -83,3 +83,13 @@ button:disabled {
 .running::after {
   content: ' ⏳';
 }
+
+body {
+  background: #0b0f19;
+  font-family: sans-serif;
+}
+
+h1 {
+  color: white;
+  text-align: center;
+}

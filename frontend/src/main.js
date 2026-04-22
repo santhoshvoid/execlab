@@ -41,6 +41,8 @@ button.onclick = async () => {
         status.className = 'completed'
         button.disabled = false
         button.innerText = 'Run Code'
+
+        refreshHistoryAfterRun()
       }
 
       if (result.status === 'failed') {
@@ -59,4 +61,51 @@ button.onclick = async () => {
     output.innerText = 'Something went wrong'
     button.disabled = false
   }
+}
+
+// ================= HISTORY =================
+
+const historyDiv = document.getElementById("history")
+
+async function loadHistory() {
+  try {
+    const res = await fetch("http://localhost:3001/history")
+    const data = await res.json()
+
+    historyDiv.innerHTML = ""
+
+    data.forEach(item => {
+      const card = document.createElement("div")
+
+      card.style.background = "#111"
+      card.style.padding = "15px"
+      card.style.marginBottom = "10px"
+      card.style.borderRadius = "10px"
+      card.style.color = "white"
+
+      card.innerHTML = `
+        <p><strong>Language:</strong> ${item.language}</p>
+        <p><strong>Output:</strong> ${item.output}</p>
+        <p><strong>Runtime:</strong> ${item.runtime} ms</p>
+        <pre style="background:#222;padding:10px;">${item.code}</pre>
+        <p style="font-size:12px;color:gray;">
+          ${new Date(item.created_at).toLocaleString()}
+        </p>
+      `
+
+      historyDiv.appendChild(card)
+    })
+
+  } catch (err) {
+    console.error(err)
+    historyDiv.innerHTML = "<p style='color:red'>Failed to load history</p>"
+  }
+}
+
+// load on page start
+loadHistory()
+
+// reload after each run completes
+function refreshHistoryAfterRun() {
+  setTimeout(loadHistory, 1000)
 }
