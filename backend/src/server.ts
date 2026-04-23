@@ -26,7 +26,8 @@ if (EXEC_MODE === 'docker') {
   console.log('[rate-limit] using REDIS (local mode)')
 
   checkRateLimitFn = async (ip: string) => {
-    const { default: redis } = await import('./services/redis')
+    const { getRedis } = await import('./services/redis')
+    const redis = getRedis()
 
     const RL_WINDOW_SEC = 60
     const RL_MAX_REQ    = 10
@@ -78,15 +79,14 @@ if (EXEC_MODE === 'docker') {
 //  Public API — free, no auth, supports all 4 languages.
 //  https://github.com/engineer-man/piston
 // ─────────────────────────────────────────────────────────────────────────────
-const PISTON_URL = 'https://emkc.org/api/v2/piston/execute'
+const JUDGE0_URL = 'https://judge0-ce.p.rapidapi.com'
 
-const PISTON_LANGS: Record<string, { language: string; version: string }> = {
-  python:     { language: 'python',     version: '3.10.0' },
-  javascript: { language: 'javascript', version: '18.15.0' },
-  cpp:        { language: 'c++',        version: '10.2.0' },
-  java:       { language: 'java',       version: '15.0.2' },
+const JUDGE0_LANGS: Record<string, number> = {
+  python: 71,
+  javascript: 63,
+  cpp: 54,
+  java: 62,
 }
-
 // ─────────────────────────────────────────────────────────────────────────────
 //  FASTIFY + SOCKET.IO
 //  In piston mode   → socket.io is attached to the SAME http server (same port).
@@ -142,16 +142,14 @@ app.post('/run', async (req, reply) => {
   }
 
   // ── PISTON MODE ────────────────────────────────────────
-  const langConfig = PISTON_LANGS[language]
-  if (!langConfig) {
+  const langId = JUDGE0_LANGS[language]
+  if (!langId) {
     return reply.code(400).send({ error: `Unsupported language: ${language}` })
   }
 
-  // Generate a unique job ID for socket.io event routing
   const jobId = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 
-  // Fire-and-forget: Piston call happens async, results come over socket
-  runPiston(jobId, langConfig, code, stdin, Date.now()).catch(console.error)
+  runJudge0(jobId, langId, code, stdin, Date.now()).catch(console.error)
 
   return { jobId }
 })
@@ -162,90 +160,110 @@ app.get('/result/:id', async () => ({ status: 'pending' }))
 // ─────────────────────────────────────────────────────────────────────────────
 //  PISTON EXECUTION
 // ─────────────────────────────────────────────────────────────────────────────
-async function runPiston(
-  jobId:      string,
-  langConfig: { language: string; version: string },
-  code:       string,
-  stdin:      string,
-  startTime:  number
+async function runJudge0(
+  jobId: string,
+  languageId: number,
+  code: string,
+  stdin: string,
+  startTime: number
 ) {
-  if (!io) return   // shouldn't happen in piston mode
+  if (!io) return
 
   try {
-    const pistonResp = await fetch(PISTON_URL, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        language:        langConfig.language,
-        version:         langConfig.version,
-        files:           [{ name: 'main', content: code }],
-        stdin:           stdin,
-        run_timeout:     15000,   // 15s execution timeout
-        compile_timeout: 30000,   // 30s compile timeout (C++/Java)
-      }),
-      // Hard total timeout: Piston + network
-      signal: AbortSignal.timeout(45_000),
-    })
+    // STEP 1: Submit code
+    const submitRes = await fetch(
+      `${JUDGE0_URL}/submissions?base64_encoded=false&wait=false`,
+      {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-rapidapi-key': process.env.JUDGE0_API_KEY!,
+          'x-rapidapi-host': 'judge0-ce.p.rapidapi.com',
+        },
+        body: JSON.stringify({
+          language_id: languageId,
+          source_code: code,
+          stdin: stdin,
+        }),
+      }
+    )
 
-    if (!pistonResp.ok) {
-      const errText = await pistonResp.text().catch(() => '')
-      throw new Error(`Piston error ${pistonResp.status}: ${errText}`)
+    const submitData = await submitRes.json()
+    if (!submitRes.ok) {
+      const errText = await submitRes.text()
+      throw new Error(`Judge0 submit failed: ${errText}`)
+    }
+    const token = submitData.token
+    if (!token) {
+      throw new Error('Judge0 did not return a token')
     }
 
-    const result = (await pistonResp.json()) as {
-      compile?: { stdout: string; stderr: string; code: number | null }
-      run:      { stdout: string; stderr: string; output: string; code: number | null }
+    // STEP 2: Poll for result
+    let result: any = null
+
+    for (let i = 0; i < 10; i++) {
+      await new Promise(res => setTimeout(res, 1000))
+
+      const res = await fetch(
+        `${JUDGE0_URL}/submissions/${token}?base64_encoded=false`,
+        {
+          headers: {
+            'x-rapidapi-key': process.env.JUDGE0_API_KEY!,
+            'x-rapidapi-host': 'judge0-ce.p.rapidapi.com',
+          },
+        }
+      )
+
+      result = await res.json()
+
+      if (result.status?.id >= 3) break
     }
 
     const runtime = Date.now() - startTime
 
-    // ── Compilation errors (C++, Java) ──
-    if (result.compile && (result.compile.code !== 0) && result.compile.stderr) {
-      // Compilation failed — treat whole output as stderr (red in terminal)
-      io.emit(`job:${jobId}`, {
-        chunk: result.compile.stderr,
-        type:  'stderr',
-      })
-      io.emit(`job:${jobId}`, {
-        status:   'error',
-        exitCode: result.compile.code ?? 1,
-        output:   result.compile.stderr,
-        runtime,
-      })
-      return
-    }
+    const stdout = result.stdout || ''
+    const stderr = result.stderr || result.compile_output || ''
+    const exitCode = result.status?.id === 3 ? 0 : 1
 
-    const stdout   = result.run.stdout  || ''
-    const stderr   = result.run.stderr  || ''
-    const exitCode = result.run.code    ?? 0
-
-    // Emit stdout (green)
     if (stdout) {
       io.emit(`job:${jobId}`, { chunk: stdout, type: 'stdout' })
     }
-    // Emit stderr (red) — even on exit 0 (e.g. Python warnings)
+
     if (stderr) {
       io.emit(`job:${jobId}`, { chunk: stderr, type: 'stderr' })
     }
 
-    // Final status event
     if (exitCode !== 0) {
-      io.emit(`job:${jobId}`, { status: 'error',     exitCode, output: stdout + stderr, runtime })
+      io.emit(`job:${jobId}`, {
+        status: 'error',
+        exitCode,
+        output: stdout + stderr,
+        runtime,
+      })
     } else {
-      io.emit(`job:${jobId}`, { status: 'completed', exitCode: 0, output: stdout,       runtime })
+      io.emit(`job:${jobId}`, {
+        status: 'completed',
+        exitCode: 0,
+        output: stdout,
+        runtime,
+      })
     }
 
-    // Save to Supabase (non-blocking)
-    saveSubmission({ code, language: langConfig.language, output: stdout + stderr, runtime })
-      .catch(err => console.error('[saveSubmission]', err))
+    saveSubmission({
+      code,
+      language: String(languageId),
+      output: stdout + stderr,
+      runtime,
+    }).catch(console.error)
 
   } catch (err: any) {
     const runtime = Date.now() - startTime
-    const msg = err?.name === 'TimeoutError'
-      ? 'Execution timed out (45s)'
-      : (err?.message || 'Piston API unreachable')
 
-    io.emit(`job:${jobId}`, { status: 'failed', error: msg, runtime })
+    io.emit(`job:${jobId}`, {
+      status: 'failed',
+      error: err.message || 'Judge0 failed',
+      runtime,
+    })
   }
 }
 

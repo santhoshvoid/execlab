@@ -1,5 +1,6 @@
 import { Queue } from 'bullmq'
-import redis from './redis'
+import { getRedis } from './redis'
+const redis = getRedis()
 
 const queue = new Queue('code-execution', {
   connection: redis

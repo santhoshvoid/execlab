@@ -1,15 +1,15 @@
 import Redis from 'ioredis'
 
-const redis = new Redis(
-  process.env.REDIS_URL || 'redis://localhost:6379',
-  {
-    maxRetriesPerRequest: null  // required by BullMQ
+let redis: Redis | null = null
+
+export function getRedis() {
+  if (!redis) {
+    redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
+      maxRetriesPerRequest: null,
+      lazyConnect: true,   // 🔥 ADD THIS
+    })
+
+    redis.on('error', () => {}) // 🔥 silence logs
   }
-)
-
-export async function testRedis() {
-  await redis.set('test', 'hello')
-  return await redis.get('test')
+  return redis
 }
-
-export default redis
