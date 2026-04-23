@@ -3,7 +3,6 @@ import cors             from '@fastify/cors'
 import { Server as SocketServer } from 'socket.io'
 import { historyRoutes } from './routes/history'
 import { saveSubmission } from './services/saveSubmission'
-import redis from './services/redis'
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  EXECUTION MODE
@@ -26,8 +25,9 @@ let checkRateLimitFn: (ip: string) => Promise<{ allowed: boolean; retryAfter?: n
 if (EXEC_MODE === 'docker') {
   console.log('[rate-limit] using REDIS (local mode)')
 
-
   checkRateLimitFn = async (ip: string) => {
+    const { default: redis } = await import('./services/redis')
+
     const RL_WINDOW_SEC = 60
     const RL_MAX_REQ    = 10
 
