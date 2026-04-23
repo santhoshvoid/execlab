@@ -1,0 +1,7 @@
+fastify
+@fastify/cors
+socket.io
+bullmq
+ioredis
+pg
+dotenv
