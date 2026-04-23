@@ -10,7 +10,7 @@
 [![Redis](https://img.shields.io/badge/Redis-BullMQ-DC382D?style=flat-square&logo=redis)](https://redis.io/)
 [![Fastify](https://img.shields.io/badge/Fastify-4.x-000000?style=flat-square&logo=fastify)](https://fastify.dev/)
 
-[Live Demo](https://your-demo-link.onrender.com) · [Report a Bug](https://github.com/yourusername/execlab/issues) · [Architecture Breakdown](#system-architecture)
+[Live Demo](https://execlab.vercel.app/) · [Report a Bug](santhosh122005@gmail.com) · [Architecture Breakdown](#system-architecture)
 
 </div>
 
